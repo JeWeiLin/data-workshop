@@ -10,8 +10,10 @@
 - Google Cloud Platform (Cloud Storage, Composer, PubSub, BigQuery, VertexAI, BigQuery ML)
 
 
+
 ### 架構圖
 ![](./pipeline.png)
+
 
 
 ### 流程說明
@@ -24,6 +26,7 @@
 2. Worker DAG (worker_dag_processing)
 
     - 負責處理實際的資料轉換與載入。被 `Sensor DAG` 觸發啟動，從 dag_run.conf 中取出訊息內容，並根據訊息中的檔案路徑進行處理。主要透過 `TriggerDagRunOperator` 將 Pub/Sub 攜帶的事件資料送入 `Worker DAG`。
+
 
 
 ### 什麼是 Worker Slot？
@@ -44,6 +47,7 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
 這代表在等待 Pub/Sub 訊息傳入的過程中，不會消耗任何 Worker 運算資源，極大化系統的可用性。
 
 
+
 ### Deferrable Mode
 
 提交監控：Sensor 啟動，告訴系統：要監控這個 PubSub 訂閱。
@@ -53,10 +57,11 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
 交給 Triggerer：監控的工作移交給了一個組件叫 Triggerer。這個組件專門用來處理非同步的等待，一個 Triggerer 可以同時監控成千上萬個任務。當 Pub/Sub 真的有訊息進來時，Triggerer 會發訊號給 Airflow：「資料來了，請重新分配一個 Slot 給這個任務繼續執行。
 
 
+
 ### 實做
 
 ```bash
-git clone https://github.com/JeWeiLin/data-worshop.git
+git clone https://github.com/JeWeiLin/data-workshop.git
 ```
 
 ```bash
@@ -64,9 +69,25 @@ pip install -r requirements.txt
 ```
 
 ```bash
-gcloud config set project < your-project-ID >
+gcloud config set project <your-project-ID>
 ```
 
+- 在 Cloud Storage 中建立一個儲存桶
+
 ```bash
-gcloud storage buckets create gs://your-bucket-name --location = asia-east1
+gcloud storage buckets create gs://your-bucket-name --location=asia-east1
 ```   
+
+- 在 PubSub 中建立名為 gcs-file-topic 的主題 (Topic, e.g. gcs-file-topic)
+
+```bash
+gcloud pubsub topics create your-pubsub-topic
+```  
+
+- 建立訂閱 (Subscription)，讓服務可以接收訊息 (e.g. gcs-file-subscription)
+
+```bash
+gcloud pubsub subscriptions create your-pubsub-subscription \
+    --topic=gcs-file-topic \
+    --ack-deadline=80
+```  
