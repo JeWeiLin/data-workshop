@@ -157,3 +157,9 @@ gcloud storage cp gcs_sensor_dag.py worker_dag_processing.py  gs://your-composer
 
 
 - 開啟 Composer 環境中的 Airflow UI 
+
+
+- 上傳檔案至先前在 Cloud Storage 中建立存放資料的儲存桶。
+
+
+- 在 BigQuery 中建立 Dataset (e.g. internal_data_demo)
