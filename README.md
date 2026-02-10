@@ -2,13 +2,15 @@
 本次工作坊主要想法為對資料時效性與自動化的需求。過去的作業模式下，上傳結構化或非結構化數據至雲端時，需仰賴人工監控存儲狀態，並以手動觸發後續的轉檔與分析腳本。
 此方式易導致數據處理延遲與資料遺漏風險。此外，在並發處理任務時，傳統工作流的資源分配瓶頸往往成為擴展障礙。故實作將以事件驅動架構 (Event-Driven)
 ，利用雲端原生的自動化機制，來確保運算與存儲事件達成即時同步。
-
+<br>
+<br>
 
 ### 工具說明
 
 - Python 
 - Google Cloud Platform (Cloud Storage, Composer, PubSub, BigQuery, VertexAI, BigQuery ML)
-
+<br>
+<br>
 
 
 ### 架構圖
@@ -26,7 +28,8 @@
 2. Worker DAG (worker_dag_processing)
 
     - 負責處理實際的資料轉換與載入。被 `Sensor DAG` 觸發啟動，從 dag_run.conf 中取出訊息內容，並根據訊息中的檔案路徑進行處理。主要透過 `TriggerDagRunOperator` 將 Pub/Sub 攜帶的事件資料送入 `Worker DAG`。
-
+<br>
+<br>
 
 
 ### 什麼是 Worker Slot？
@@ -39,13 +42,14 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
     - 結果：即使工人只是在「等」，他也死死佔住了那個工位。
 
 這導致了資源浪費： 如果任務需要等 2 小時資料才會來，這 2 小時內，那個 Slot 就是停擺的狀態，其他真正需要運算的任務進不來。假設這種 Sensor 多開幾個，Airflow 就算沒在做事，也會因為工位滿了而無法執行任何新任務。
-
-
+<br>
+<br>
 
 ### 限制
 為了避免上述長時間佔用 Worker slot 問題，本實作在 `PubSubPullSensor` 參數中，設定 `deferrable = True`，此功能將等待任務移交給 Airflow Triggerer 處理。
 這代表在等待 Pub/Sub 訊息傳入的過程中，不會消耗任何 Worker 運算資源，極大化系統的可用性。
-
+<br>
+<br>
 
 
 ### Deferrable Mode
