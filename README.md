@@ -58,6 +58,30 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
 
 
 
+### 程式說明
+worker_dag_processing 主要包含三個主要任務：
+
+1. parse_data_info (PythonOperator)
+
+    - 解析外部觸發傳入的 PubSub 訊息。
+
+    - 從 dag_run.conf 中取出訊息，進行 Base64 解碼與 JSON 解析，從中提取檔案所在的 bucket 名稱與檔案 name。
+
+2. load_to_bq (GCSToBigQueryOperator)
+
+    - 將檔案從 GCS 載入到 BigQuery 暫存表。
+
+    - 利用 XCom 動態接收上一個任務解析出來的檔案路徑，並使用 WRITE_APPEND 模式存入 incoming_files-2 資料表，開啟 autodetect 自動辨識欄位格式。
+
+3. generate_embeddings (BigQueryInsertJobOperator)
+
+    - 利用 BigQuery ML 產生資料向量 (Embedding)。
+
+    - 將評論資料（評分、產品ID、摘要、內容）組合成一個長字串 content。
+
+    - ML.GENERATE_EMBEDDING 函式，搭配指定的模型（如 Vertex AI 的嵌入模型）。將產生的向量資料存入最終表 embedded_table_2，供後續語意搜尋或 RAG 應用使用。
+
+
 ### 實做
 
 ```bash
@@ -76,7 +100,7 @@ gcloud config set project <your-project-ID>
 <br>
 <br>
 
-- 在 Cloud Storage 中建立一個儲存桶
+- 在 Cloud Storage 中建立一個儲存桶，作為存放資料的地方。
 
 ```bash
 gcloud storage buckets create gs://your-bucket-name --location=asia-east1
@@ -112,3 +136,7 @@ gcloud storage buckets notifications create gs://your-bucket-name \
 <br>
 
 OBJECT_FINALIZE: 代表只有 `新檔案上傳成功` 或 `覆蓋檔案` 時才會發通知。
+若有出現 kind: storage#notification 和 id: '1'，代表已經成功建立了 GCS 與 PubSub 之間的通知連結 (Notification) 。
+
+
+- 建立 Composer 環境 
