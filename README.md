@@ -222,3 +222,6 @@ FROM VECTOR_SEARCH(
     - top_k => 3：回傳關聯性最高的前 3 筆資料。
 
     - distance：自動回傳的欄位，數值越小（越接近 0）代表語意越接近使用者的問題。
+
+
+###  [Slide](https://docs.google.com/presentation/d/12Bul7mEgNAPgvxsmBaKheew2E1whUR-izYS7-27uwzI/edit?slide=id.g3bd1c786fab_0_110#slide=id.g3bd1c786fab_0_110)
