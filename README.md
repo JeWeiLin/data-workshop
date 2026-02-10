@@ -170,6 +170,10 @@ gcloud storage cp gcs_sensor_dag.py worker_dag_processing.py  gs://your-composer
     - 創建 Connection ID
 
 
+- 在 BigQuery 中，執行以下向量搜尋的 SQL，會在先前建立的 Dataset 中產生 Model (embedding_model_2) 與向量表 (embedded_table_2)。
+存放經過 Vertex AI 模型處理後的向量資料。針對使用者的自然語言提問，從向量資料庫中檢索出最相關的評論。
+
+
 ```SQL
 SELECT 
   base.asin,
@@ -198,3 +202,23 @@ FROM VECTOR_SEARCH(
   distance_type => 'COSINE'
 )
 ```
+
+
+
+1. ML.GENERATE_EMBEDDING (查詢向量化)：
+
+    - 將使用者的提問（例如：「我想要一張用於三星手機且穩定無誤的 SD 卡」）即時轉換成數值向量。
+
+    - 使用與建立資料表時相同的模型 (embedding_model_2)，確保兩者在相同的語意空間中比較。
+
+2. VECTOR_SEARCH (向量比對)：
+
+    - 目標表：embedded_table_2。
+
+    - 搜尋欄位：vector_data（存放評論向量的欄位）。
+
+    - 比對方式：distance_type => 'COSINE'。餘弦相似度常用於文本比對，計算兩個向量之間夾角的餘弦值。
+
+    - top_k => 3：回傳關聯性最高的前 3 筆資料。
+
+    - distance：自動回傳的欄位，數值越小（越接近 0）代表語意越接近使用者的問題。
