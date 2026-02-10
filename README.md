@@ -163,3 +163,38 @@ gcloud storage cp gcs_sensor_dag.py worker_dag_processing.py  gs://your-composer
 
 
 - 在 BigQuery 中建立 Dataset (e.g. internal_data_demo)
+
+
+- 在 BigQuery Explorer 中的 Connection 中 建立連線 
+    - Connection type 選擇 Vertex AI remote models, remote functions, BigLake and Spanner (Cloud Resource)
+    - 創建 Connection ID
+
+
+```SQL
+SELECT 
+  base.asin,
+  base.reviewerName,
+  base.overall,
+  base.summary,
+  base.reviewText,
+  distance -- 數值越小代表語意越接近 (如果是用 Cosine Distance)
+FROM VECTOR_SEARCH(
+  -- 指定你的向量資料表
+  TABLE `tw-rd-data-jewei-lin.internal_data_demo.embedded_table_2`,
+  'vector_data',
+  
+  -- 將問題轉成向量
+  (
+    SELECT ml_generate_embedding_result, content
+    FROM ML.GENERATE_EMBEDDING(
+      MODEL `tw-rd-data-jewei-lin.internal_data_demo.embedding_model_2`,
+      (SELECT 'I want a reliable SD card with zero issues for my Samsung phone' AS content),
+      STRUCT(TRUE AS flatten_json_output)
+    )
+  ),
+  
+  -- 回傳前 3 名最相關的評論
+  top_k => 3,
+  distance_type => 'COSINE'
+)
+```
