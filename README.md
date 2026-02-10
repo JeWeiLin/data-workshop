@@ -74,6 +74,7 @@ pip3 install -r requirements.txt
 gcloud config set project <your-project-ID>
 ```
 <br>
+<br>
 
 - 在 Cloud Storage 中建立一個儲存桶
 
@@ -81,12 +82,14 @@ gcloud config set project <your-project-ID>
 gcloud storage buckets create gs://your-bucket-name --location=asia-east1
 ```   
 <br>
+<br>
 
 - 在 PubSub 中建立名為 gcs-file-topic 的主題 (Topic, e.g. gcs-file-topic)
 
 ```bash
 gcloud pubsub topics create your-pubsub-topic
 ```  
+<br>
 <br>
 
 - 建立訂閱 (Subscription)，讓服務可以接收訊息 (e.g. gcs-file-subscription)
@@ -97,6 +100,7 @@ gcloud pubsub subscriptions create your-pubsub-subscription \
     --ack-deadline=80
 ```  
 <br>
+<br>
 
 - 建立 GCS 通知連結 (Notification) ，讓 GCS 在檔案變動時主動發訊息給 PubSub。
 
@@ -104,3 +108,7 @@ gcloud pubsub subscriptions create your-pubsub-subscription \
 gcloud storage buckets notifications create gs://your-bucket-name \
     --topic=your-pubsub-topic \
     --event-types=OBJECT_FINALIZE
+```
+<br>
+
+OBJECT_FINALIZE: 代表只有 `新檔案上傳成功` 或 `覆蓋檔案` 時才會發通知。
