@@ -224,4 +224,4 @@ FROM VECTOR_SEARCH(
     - distance：自動回傳的欄位，數值越小（越接近 0）代表語意越接近使用者的問題。
 
 
-###  [Slide](https://docs.google.com/presentation/d/12Bul7mEgNAPgvxsmBaKheew2E1whUR-izYS7-27uwzI/edit?slide=id.g3bd1c786fab_0_110#slide=id.g3bd1c786fab_0_110)
+###  [Slide](https://docs.google.com/presentation/d/12Bul7mEgNAPgvxsmBaKheew2E1whUR-izYS7-27uwzI/edit?slide=id.g35e0a240de4_0_0#slide=id.g35e0a240de4_0_0)
