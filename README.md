@@ -55,18 +55,18 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
 
 ### 實做
 
-    ```bash
-    git clone https://github.com/JeWeiLin/data-worshop.git
-    ```
+```bash
+git clone https://github.com/JeWeiLin/data-worshop.git
+```
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+pip install -r requirements.txt
+```
 
-    ```bash
-    gcloud config set project < your-project-ID >
-    ```
+```bash
+gcloud config set project < your-project-ID >
+```
 
-    ```bash
-    gcloud storage buckets create gs://your-bucket-name --location = asia-east1
-    ```   
+```bash
+gcloud storage buckets create gs://your-bucket-name --location = asia-east1
+```   
