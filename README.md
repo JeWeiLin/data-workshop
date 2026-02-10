@@ -59,7 +59,8 @@ Airflow 的 Worker 是執行任務的地方。為了不讓 Worker 超載，系�
 釋放工位 (Suspend)：Sensor 交出 Slot，工人（Worker）可以去處理其他的資料轉換或運算任務。
 
 交給 Triggerer：監控的工作移交給了一個組件叫 Triggerer。這個組件專門用來處理非同步的等待，一個 Triggerer 可以同時監控成千上萬個任務。當 Pub/Sub 真的有訊息進來時，Triggerer 會發訊號給 Airflow：「資料來了，請重新分配一個 Slot 給這個任務繼續執行。
-
+<br>
+<br>
 
 
 ### 程式說明
@@ -93,7 +94,8 @@ git clone https://github.com/JeWeiLin/data-workshop.git
 
 pip3 install -r requirements.txt
 ```
-
+<br>
+<br>
 
 
 - 設定 Cloud Platform 專案
@@ -145,14 +147,12 @@ OBJECT_FINALIZE: 代表只有 `新檔案上傳成功` 或 `覆蓋檔案` 時才�
 
 - 建立 Composer 環境 
 <br>
-<br>
 
 - 上傳程式 `gcs_sensor_dag.py` 和 `worker_dag_processing.py` 到 Composer 在 GCS 產生的儲存桶中的 DAGs 資料夾中。
 
 ```bash
 gcloud storage cp gcs_sensor_dag.py worker_dag_processing.py  gs://your-composer-bucket/dags
 ```
-<br>
 <br>
 
 
