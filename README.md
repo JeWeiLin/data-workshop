@@ -161,10 +161,10 @@ OBJECT_FINALIZE: 代表只有 `新檔案上傳成功` 或 `覆蓋檔案` 時才�
 - 建立 Composer 環境 
 <br>
 
-- 上傳程式 `gcs_sensor_dag.py` 和 `worker_dag_processing.py` 到 Composer 在 GCS 產生的儲存桶中的 DAGs 資料夾中。
+- 上傳程式 `sensor_dag_gcs.py` 和 `worker_dag_processing.py` 到 Composer 在 GCS 產生的儲存桶中的 DAGs 資料夾中。
 
 ```bash
-gcloud storage cp gcs_sensor_dag.py worker_dag_processing.py  gs://your-composer-bucket/dags
+gcloud storage cp sensor_dag_gcs.py worker_dag_processing.py  gs://your-composer-bucket/dags
 ```
 <br>
 
