@@ -9,7 +9,7 @@
 ### 工具說明
 
 - Python 
-- Google Cloud Platform (Cloud Storage, Composer, PubSub, BigQuery, VertexAI, BigQuery ML)
+- Google Cloud Platform (Cloud Storage, Composer, Pub/Sub, BigQuery, VertexAI, BigQuery ML)
 <br>
 <br>
 
@@ -24,11 +24,11 @@
 
 1. Sensor DAG (sensor_dag_gcs)
 
-    - 專注於外部事件，整合 PubSub 服務，利用 `PubSubPullSensor` 對訂閱項目的即時監控。當偵測到 GCS 有新檔案產生的訊息時，會一次性抓取最多 10 則訊息，並將這些訊息封裝後傳遞給下游。
+    - 專注於外部事件，整合 Pub/Sub 服務，利用 `Pub/SubPullSensor` 對訂閱項目的即時監控。當偵測到 GCS 有新檔案產生的訊息時，會一次性抓取最多 10 則訊息，並將這些訊息封裝後傳遞給下游。
 
 2. Worker DAG (worker_dag_processing)
 
-    - 負責處理實際的資料轉換與載入。被 `Sensor DAG` 觸發啟動，從 dag_run.conf 中取出訊息內容，並根據訊息中的檔案路徑進行處理。主要透過 `TriggerDagRunOperator` 將 PubSub 攜帶的事件資料送入 `Worker DAG`。
+    - 負責處理實際的資料轉換與載入。被 `Sensor DAG` 觸發啟動，從 dag_run.conf 中取出訊息內容，並根據訊息中的檔案路徑進行處理。主要透過 `TriggerDagRunOperator` 將 Pub/Sub 攜帶的事件資料送入 `Worker DAG`。
 <br>
 <br>
 
@@ -59,15 +59,15 @@
 <br>
 
 ### 限制
-為了避免上述長時間佔用 Worker slot 問題，本實作在 `PubSubPullSensor` 參數中，設定 `deferrable = True`，此功能將等待任務移交給 Airflow Triggerer 處理。
-這代表在等待 PubSub 訊息傳入的過程中，不會消耗任何 Worker 運算資源，極大化系統的可用性。
+為了避免上述長時間佔用 Worker slot 問題，本實作在 `Pub/SubPullSensor` 參數中，設定 `deferrable = True`，此功能將等待任務移交給 Airflow Triggerer 處理。
+這代表在等待 Pub/Sub 訊息傳入的過程中，不會消耗任何 Worker 運算資源，極大化系統的可用性。
 <br>
 <br>
 
 
 ### Deferrable Mode
 
-提交監控：Sensor 啟動，告訴系統：要監控這個 PubSub 訂閱。
+提交監控：Sensor 啟動，告訴系統：要監控這個 Pub/Sub 訂閱。
 
 釋放工位 (Suspend)：Sensor 交出 Slot，工人（Worker）可以去處理其他的資料轉換或運算任務。
 
@@ -81,7 +81,7 @@ worker_dag_processing 主要包含三個主要任務：
 
 1. parse_data_info (PythonOperator)
 
-    - 解析外部觸發傳入的 PubSub 訊息。
+    - 解析外部觸發傳入的 Pub/Sub 訊息。
 
     - 從 dag_run.conf 中取出訊息，進行 Base64 解碼與 JSON 解析，從中提取檔案所在的 bucket 名稱與檔案 name。
 
@@ -127,10 +127,10 @@ gcloud storage buckets create gs://your-bucket-name --location=asia-east1
 <br>
 <br>
 
-- 在 PubSub 中建立名為 gcs-file-topic 的主題 (Topic, e.g. gcs-file-topic)
+- 在 Pub/Sub 中建立名為 gcs-file-topic 的主題 (Topic, e.g. gcs-file-topic)
 
 ```bash
-gcloud pubsub topics create your-pubsub-topic
+gcloud Pub/Sub topics create your-Pub/Sub-topic
 ```  
 <br>
 <br>
@@ -138,24 +138,24 @@ gcloud pubsub topics create your-pubsub-topic
 - 建立訂閱 (Subscription)，讓服務可以接收訊息 (e.g. gcs-file-subscription)
 
 ```bash
-gcloud pubsub subscriptions create your-pubsub-subscription \
-    --topic=your-pubsub-topic \
+gcloud Pub/Sub subscriptions create your-Pub/Sub-subscription \
+    --topic=your-Pub/Sub-topic \
     --ack-deadline=80
 ```  
 <br>
 <br>
 
-- 建立 GCS 通知連結 (Notification) ，讓 GCS 在檔案變動時主動發訊息給 PubSub。
+- 建立 GCS 通知連結 (Notification) ，讓 GCS 在檔案變動時主動發訊息給 Pub/Sub。
 
 ```bash
 gcloud storage buckets notifications create gs://your-bucket-name \
-    --topic=your-pubsub-topic \
+    --topic=your-Pub/Sub-topic \
     --event-types=OBJECT_FINALIZE
 ```
 <br>
 
 OBJECT_FINALIZE: 代表只有 `新檔案上傳成功` 或 `覆蓋檔案` 時才會發通知。
-若有出現 kind: storage#notification 和 id: '1'，代表已經成功建立了 GCS 與 PubSub 之間的通知連結 (Notification) 。
+若有出現 kind: storage#notification 和 id: '1'，代表已經成功建立了 GCS 與 Pub/Sub 之間的通知連結 (Notification) 。
 
 
 - 建立 Composer 環境 
