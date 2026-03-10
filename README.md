@@ -127,7 +127,7 @@ gcloud storage buckets create gs://your-bucket-name --location=asia-east1
 <br>
 <br>
 
-- 在 Pub/Sub 中建立名為 gcs-file-topic 的主題 (Topic, e.g. gcs-file-topic)
+- 在 Pub/Sub 中建立名為 gcs-file-topic 的主題 (Topic, e.g., gcs-file-topic)
 
 ```bash
 gcloud Pub/Sub topics create your-Pub/Sub-topic
@@ -135,7 +135,7 @@ gcloud Pub/Sub topics create your-Pub/Sub-topic
 <br>
 <br>
 
-- 建立訂閱 (Subscription)，讓服務可以接收訊息 (e.g. gcs-file-subscription)
+- 建立訂閱 (Subscription)，讓服務可以接收訊息 (e.g., gcs-file-subscription)
 
 ```bash
 gcloud Pub/Sub subscriptions create your-Pub/Sub-subscription \
@@ -175,7 +175,7 @@ gcloud storage cp sensor_dag_gcs.py worker_dag_processing.py  gs://your-composer
 - 上傳檔案至先前在 Cloud Storage 中建立存放資料的儲存桶。
 
 
-- 在 BigQuery 中建立 Dataset (e.g. internal_data_demo)
+- 在 BigQuery 中建立 Dataset (e.g., internal_data_demo)
 
 
 - 在 BigQuery Explorer 中的 Connection 中 建立連線 
@@ -188,31 +188,29 @@ gcloud storage cp sensor_dag_gcs.py worker_dag_processing.py  gs://your-composer
 
 
 ```SQL
-SELECT 
-  base.asin,
-  base.reviewerName,
-  base.overall,
-  base.summary,
-  base.reviewText,
-  distance -- 數值越小代表語意越接近 (如果是用 Cosine Distance)
+SELECT
+ base.`Reviewer Name`,
+ base.`Review Title`,
+ base.`Review Text`,
+ base.Rating,
+ distance -- 數值越小代表語意越接近 (如果是用 Cosine Distance)
 FROM VECTOR_SEARCH(
-  -- 指定你的向量資料表
-  TABLE `tw-rd-data-jewei-lin.internal_data_demo.embedded_table_2`,
-  'vector_data',
-  
-  -- 將問題轉成向量
-  (
-    SELECT ml_generate_embedding_result, content
-    FROM ML.GENERATE_EMBEDDING(
-      MODEL `tw-rd-data-jewei-lin.internal_data_demo.embedding_model_2`,
-      (SELECT 'I want a reliable SD card with zero issues for my Samsung phone' AS content),
-      STRUCT(TRUE AS flatten_json_output)
-    )
-  ),
-  
-  -- 回傳前 3 名最相關的評論
-  top_k => 3,
-  distance_type => 'COSINE'
+-- 指定你的向量資料表
+ TABLE `your-project-id.your-dataset.your-embedding-table`,
+ 'vector_data',
+
+ -- 將問題轉成向量
+ (
+   SELECT ml_generate_embedding_result, content
+   FROM ML.GENERATE_EMBEDDING(
+     MODEL `your-project-id.your-dataset.your-model`,
+     (SELECT 'I want to find complaints about delivery issues' AS content),
+     STRUCT(TRUE AS flatten_json_output)
+   )
+ ),
+ -- 回傳前 5 名最相關的評論
+ top_k => 5,
+ distance_type => 'COSINE'
 )
 ```
 
@@ -220,7 +218,7 @@ FROM VECTOR_SEARCH(
 
 1. ML.GENERATE_EMBEDDING (查詢向量化)：
 
-    - 將使用者的提問（e.g. 我想要一張用於三星手機且穩定無誤的 SD 卡）即時轉換成數值向量。
+    - 將使用者的提問（e.g., 我想要一張用於三星手機且穩定無誤的 SD 卡）即時轉換成數值向量。
 
     - 使用與建立資料表時相同的模型 (embedding_model_2)，確保兩者在相同的語意空間中比較。
 
@@ -232,7 +230,7 @@ FROM VECTOR_SEARCH(
 
     - 比對方式：distance_type => 'COSINE'。餘弦相似度常用於文本比對，計算兩個向量之間夾角的餘弦值。
 
-    - top_k => 3：回傳關聯性最高的前 3 筆資料。
+    - top_k => 5：回傳關聯性最高的前 5 筆資料。
 
     - distance：自動回傳的欄位，數值越小（越接近 0）代表語意越接近使用者的問題。
 
