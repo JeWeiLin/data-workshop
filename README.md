@@ -197,15 +197,19 @@ gcloud storage cp sensor_dag_gcs.py worker_dag_processing.py  gs://your-composer
 
 
 - 開啟 Composer 環境中的 Airflow UI 
+<br>
+<br>
 
 - 點選 sensor_dag_gcs.py，進入後點擊右上角一個三角形的 Trigger DAG。
-
+<br>
+<br>
 
 - 上傳檔案至先前在 Cloud Storage 中建立存放資料的儲存桶。
 ```bash
 gcloud storage cp amazon_review.csv gs://your-bucket-name
 ```
-
+<br>
+<br>
 <!-- - 在 BigQuery 中建立 Dataset (e.g., internal_data_demo) -->
 
 
