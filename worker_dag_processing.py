@@ -5,27 +5,26 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 from datetime import datetime
 import json
 import base64
+import ast
+
 
 def parse_pubsub_data(**context):
-    try:
-        conf = context.get('dag_run').conf
-        if not conf or 'messages' not in conf:
-            raise ValueError("找不到觸發參數，檢查確認是否由 Sensor 觸發")
-            
-        messages = conf.get('messages', [])
-        if not messages:
-            raise ValueError("訊息列表為空")
+    messages = context.get('dag_run').conf.get('messages', [])
 
-        first_msg = messages[0]
-        payload = base64.b64decode(first_msg['data']).decode('utf-8')
-        data = json.loads(payload)
-        
-        print(f"DEBUG: 解析後的資料為 {data}")
-        return data
-        
-    except Exception as e:
-        print(f"解析失敗！錯誤原因: {str(e)}")
-        return {"bucket": "your-gcs-bucket", "name": "your-filename.csv"} # 填入檔案上傳 GCS 的位置與檔案名稱
+    if isinstance(messages, str):
+        try:
+            messages = json.loads(messages)
+        except json.JSONDecodeError:
+            messages = ast.literal_eval(messages.strip())
+
+    first_msg = messages[0]
+    if isinstance(first_msg, str):
+        first_msg = ast.literal_eval(first_msg.strip())
+
+    # 取得訊息
+    msg = first_msg.get('message', first_msg)
+    payload = base64.b64decode(msg['data']).decode('utf-8')
+    return json.loads(payload)
     
 
 with DAG(
@@ -44,40 +43,42 @@ with DAG(
         task_id = 'load_to_bq',
         bucket = "{{ task_instance.xcom_pull(task_ids = 'parse_data_info')['bucket'] }}",
         source_objects = ["{{ task_instance.xcom_pull(task_ids = 'parse_data_info')['name'] }}"],
-        destination_project_dataset_table = "your-project-id.your-dataset.your-table", # 在 BigQuery 中建立資料載入的位置
+        destination_project_dataset_table = "your-project-id.your-dataset.your-incomming-table",
         write_disposition = 'WRITE_APPEND',
         source_format = 'CSV',
         autodetect = True,
-        skip_leading_rows = 1
+        skip_leading_rows = 1,
+        allow_quoted_newlines = True,   # 允許欄位內容含換行（Review Text ）
+        allow_jagged_rows = True,     # 允許欄位數不足的列
+        encoding = 'UTF-8'
     )
 
     generate_embeddings = BigQueryInsertJobOperator(
         task_id = 'generate_embeddings',
         # CREATE OR REPLACE TABLE `your-project-id.your-dataset.your-embedding-table` 創建 embedding-table 表
-        # FROM ML.GENERATE_EMBEDDING(MODEL `your-project-id.your-dataset.your-embedding-model`) 創建模型 
-        # SELECT * FROM `your-project-id.your-dataset.your-incoming-files` BigQuery 中建立資料載入的位置
+        # FROM ML.GENERATE_EMBEDDING(MODEL `your-project-id.your-dataset.your-model`) 創建模型 
+        # SELECT * FROM `your-project-id.your-dataset.your-incoming-table` BigQuery 中建立資料載入的位置
         configuration = {
             "query": {
                 "query": """
-                    CREATE OR REPLACE TABLE `your-project-id.your-dataset.your-embedding-table` AS 
-                    SELECT 
+                    CREATE OR REPLACE TABLE `your-project-id.your-dataset.your-embedding-table` AS
+                    SELECT
                         * EXCEPT(ml_generate_embedding_result, ml_generate_embedding_statistics),
                         ml_generate_embedding_result as vector_data
                     FROM ML.GENERATE_EMBEDDING(
-                        MODEL `your-project-id.your-dataset.your-embedding-model`,
+                        MODEL `your-project-id.your-dataset.your-model`,
                         (
-                            SELECT 
-                                *, 
-                                -- 針對評論資料進行欄位組合
+                            SELECT
+                                *,
                                 CONCAT(
-                                    'Rating: ', CAST(overall AS STRING), ' stars. ',
-                                    'Product ID: ', asin, 
-                                    '. Summary: ', IFNULL(summary, ''), 
-                                    '. Review: ', IFNULL(reviewText, '')
-                                ) as content
-                            FROM `your-project-id.your-dataset.your-incoming-files`
-                            -- 排除掉 reviewText 為空的資料，避免浪費額度
-                            WHERE reviewText IS NOT NULL
+                                    'Rating: ', CAST(Rating AS STRING), ' stars. ',
+                                    'Country: ', IFNULL(Country, 'Unknown'), '. ',
+                                    'Title: ', IFNULL(`Review Title`, ''), '. ',
+                                    'Review: ', IFNULL(`Review Text`, ''), '. ',
+                                    'Date of Experience: ', IFNULL(`Date of Experience`, '')
+                                ) AS content
+                            FROM `your-project-id.your-dataset.your-incomming-table`
+                            WHERE `Review Text` IS NOT NULL
                         ),
                         STRUCT(TRUE AS flatten_json_output)
                     )
@@ -87,3 +88,4 @@ with DAG(
         }
     )
     parse_task >> load_bq >> generate_embeddings
+
